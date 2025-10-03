@@ -58,6 +58,7 @@
 		"leaflet-routing-machine": "^3.2.12",
 		"mongodb": "^6.16.0",
 		"mongoose": "^8.16.5",
-		"nodemailer": "^7.0.3"
+		"nodemailer": "^7.0.3",
+		"sveltekit-i18n": "^2.4.2"
 	}
 }

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { JWT_PASSWORD } from '$env/static/private';
 import { User,mongoose } from '$lib/utils/mongodb.js';
 import { json } from '@sveltejs/kit';
-import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
+import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/private';
 import { ALLOWED_ORIGIN } from '$env/static/private';
 
 // Inizializza il client Google
@@ -11,7 +11,7 @@ const client = new OAuth2Client(PUBLIC_GOOGLE_CLIENT_ID);
 
 // CORS headers da includere in ogni risposta
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+  'Access-Control-Allow-Origin': "http://localhost:5173",
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
@@ -57,7 +57,7 @@ export async function POST({ request }) {
     if (!user) {
       user = new User({
         email,
-        password: "undefined",
+        password: "null",
         isAdmin: false,
         isGoogleAuthenticated: true
       });
