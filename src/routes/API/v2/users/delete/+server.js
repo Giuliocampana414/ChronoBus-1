@@ -16,12 +16,12 @@ export async function DELETE({ request }) {
 		// Verifica il token JWT
 		const decoded = jwt.verify(token, JWT_PASSWORD);
 
-		if (!decoded?.id) {
+		if (!decoded?.userId) {
 			return json({ error: 'Not valid token' }, { status: 403 });
 		}
 
 		// Elimina l'utente dal database usando Mongoose
-		const result = await User.deleteOne({ _id: decoded.id});
+		const result = await User.deleteOne({ _id: decoded.userId});
 
 		if (result.deletedCount === 1) {
 			return json({ message: 'Account successfully deleted' }, { status: 200 });

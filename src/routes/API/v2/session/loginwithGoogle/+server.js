@@ -65,7 +65,7 @@ export async function POST({ request }) {
     }
 
     const jwtToken = jwt.sign(
-      { id: user._id, email: user.email, isAdmin: user.isAdmin },
+      { userId: user._id, email: user.email, isAdmin: user.isAdmin },
       JWT_PASSWORD,
       { expiresIn: '30d' }
     );
