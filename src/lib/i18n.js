@@ -64,6 +64,9 @@ export const translations = {
     checkYourEmail: "Check your email for the confirmation link.",
     emailConfirmed: "Email confirmed successfully.",
     confirmation_email_failed: "Email confirmation failed.",
+    email_confirmation: "Email Confirmation",
+    processing_confirmation: "Processing email confirmation...",
+    your_email_confirmed: "Your email has been successfully confirmed! You can now log in.",
     english: "English",
     italian: "Italian"
   },
@@ -131,6 +134,9 @@ export const translations = {
     checkYourEmail: "Controlla la tua email per il link di conferma.",
     emailConfirmed: "Email confermata con successo.",
     confirmation_email_failed: "Conferma email fallita.",
+    email_confirmation: "Conferma Email",
+    processing_confirmation: "Elaborazione della conferma email in corso...",
+    your_email_confirmed: "La tua email è stata confermata con successo! Ora puoi effettuare il login.",
     english: "Inglese",
     italian: "Italiano"
   }

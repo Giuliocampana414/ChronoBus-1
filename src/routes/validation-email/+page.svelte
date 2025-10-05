@@ -57,11 +57,11 @@
 <div class="flex items-center justify-center h-full bg-gray-100">
   <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
 <a class:dock-active={page.url.pathname === '/validation-email'} href="/validation-email" aria-label="Validation Email"></a>
-    <h2 class="text-center mb-8 text-[#1a274d] font-semibold tracking-[2px]">Email Confirmation</h2>
+    <h2 class="text-center mb-8 text-[#1a274d] font-semibold tracking-[2px]">{translations[currentLang].email_confirmation}</h2>
     {#if loading}
-      <p class="text-center text-[#1a274d]">Processing your email confirmation...</p>
+      <p class="text-center text-[#1a274d]">{translations[currentLang].processing_confirmation}</p>
     {:else}
-      <p class="text-center text-[#1a274d]">Your email has been successfully confirmed! You can now log in.</p>
+      <p class="text-center text-[#1a274d]">{translations[currentLang].your_email_confirmed}</p>
     {/if}
   </div>
 </div>
