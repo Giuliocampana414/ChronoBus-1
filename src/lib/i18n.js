@@ -61,6 +61,9 @@ export const translations = {
     change_password: "Change Password",
     password_changed_successfully: "Password changed successfully.",
     password_change_failed: "Password change failed.",
+    checkYourEmail: "Check your email for the confirmation link.",
+    emailConfirmed: "Email confirmed successfully.",
+    confirmation_email_failed: "Email confirmation failed.",
     english: "English",
     italian: "Italian"
   },
@@ -125,6 +128,9 @@ export const translations = {
     change_password: "Cambia Password",
     password_changed_successfully: "Password modificata con successo",
     password_change_failed: "Cambio password fallito",
+    checkYourEmail: "Controlla la tua email per il link di conferma.",
+    emailConfirmed: "Email confermata con successo.",
+    confirmation_email_failed: "Conferma email fallita.",
     english: "Inglese",
     italian: "Italiano"
   }
