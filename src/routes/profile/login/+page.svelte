@@ -5,7 +5,7 @@
   import { goto } from '$app/navigation';
   import { isAdmin } from '$lib/stores/admin';
   import { onMount } from 'svelte';
-  import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
+  import { GOOGLE_CLIENT_ID } from '$env/static/private';
 
   let email = $state('');
   let password = $state('');
@@ -81,7 +81,7 @@
     script.onload = () => {
       if (window.google) {
         window.google.accounts.id.initialize({
-          client_id: PUBLIC_GOOGLE_CLIENT_ID,
+          client_id: GOOGLE_CLIENT_ID,
           callback: handleGoogleCredentialResponse
         });
         window.google.accounts.id.disableAutoSelect();
@@ -128,7 +128,7 @@
     if (window.google?.accounts?.id) {
       if (!isGoogleInitialized) {
         window.google.accounts.id.initialize({
-          client_id: PUBLIC_GOOGLE_CLIENT_ID,
+          client_id: GOOGLE_CLIENT_ID,
           callback: handleGoogleCredentialResponse,
           ux_mode: 'popup'
         });
