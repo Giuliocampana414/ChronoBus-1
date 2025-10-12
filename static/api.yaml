@@ -1402,7 +1402,7 @@ post:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    get:
+get:
       tags:
           - Users
       summary: Recupera la lista degli utenti (solo admin)
@@ -1688,7 +1688,7 @@ post:
                 properties:
                   error:
                     type: string
-                    example: Server error
+                    example: Server error      
 /API/v2/session/loginwithgoogle:
   tags:
     - Users
@@ -1848,7 +1848,7 @@ post:
             properties:
               error:
                 type: string
-                example: Server error during account deletion              
+                example: Server error during account deletion                                
 components:
   securitySchemes:
       BearerAuth:
