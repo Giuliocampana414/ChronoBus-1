@@ -82,7 +82,7 @@ export async function POST({ request }) {
 
     // Crea il JWT per l'autenticazione
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id, email: user.email , isAdmin: user.isAdmin },
       JWT_PASSWORD,
       { expiresIn: "30d" }
     );
