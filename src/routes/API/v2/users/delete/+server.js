@@ -10,26 +10,26 @@ export async function DELETE({ request }) {
 		const token = authHeader && authHeader.split(' ')[1];
 
 		if (!token) {
-			return json({ error: 'Token mancante' }, { status: 401 });
+			return json({ error: 'Missing token' }, { status: 401 });
 		}
 
 		// Verifica il token JWT
 		const decoded = jwt.verify(token, JWT_PASSWORD);
 
-		if (!decoded?.id) {
-			return json({ error: 'Token non valido' }, { status: 403 });
+		if (!decoded?.userId) {
+			return json({ error: 'Not valid token' }, { status: 403 });
 		}
 
 		// Elimina l'utente dal database usando Mongoose
-		const result = await User.deleteOne({ userId: decoded.id });
+		const result = await User.deleteOne({ _id: decoded.userId});
 
 		if (result.deletedCount === 1) {
-			return json({ message: 'Account eliminato con successo' }, { status: 200 });
+			return json({ message: 'Account successfully deleted' }, { status: 200 });
 		} else {
-			return json({ error: 'Utente non trovato' }, { status: 404 });
+			return json({ error: 'User not found' }, { status: 404 });
 		}
 	} catch (err) {
-		console.error('Errore durante l’eliminazione dell’account:', err);
-		return json({ error: 'Errore del server' }, { status: 500 });
+		console.error('Error deleting account:', err);
+		return json({ error: 'Server error' }, { status: 500 });
 	}
 }

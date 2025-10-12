@@ -2,8 +2,10 @@ import bcrypt from 'bcryptjs';
 import jwt from "jsonwebtoken";
 import { JWT_PASSWORD } from '$env/static/private';
 import { User } from '$lib/utils/mongodb.js';
-import { json } from '@sveltejs/kit';
+import { json, redirect } from '@sveltejs/kit';
 import { validateToken } from '$lib/utils/auth.js';
+import { EMAIL,EMAIL_PASSWORD} from '$env/static/private';
+import nodemailer from 'nodemailer';
 
 /**
  * Gestisce la registrazione di un nuovo utente tramite richiesta POST.
@@ -32,41 +34,64 @@ export async function POST({ request }) {
     const { email, password } = await request.json();
 
     if (!email || !password) {
-      return json(
-        { error: 'Email and password required.' },
-        { status: 400 }
-      );
+      return json({ error: 'Email and password required.' }, { status: 400 });
     }
 
+    // Verifica se l'utente esiste già
     const existing = await User.findOne({ email });
     if (existing) {
-      return json(
-        { error: 'Account already exists with this email.' },
-        { status: 409 }
-      );
+      return json({ error: 'Account already exists with this email.' }, { status: 409 });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    // Cifra la password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new User({ email, password: hashed });
+    // Crea un nuovo utente
+    const user = new User({ email, password: hashedPassword, isConfirmed: false });
     await user.save();
 
+    // Crea il token di conferma dell'email
+    const confirmToken = jwt.sign({ userId: user._id }, JWT_PASSWORD, { expiresIn: '3h' });
+
+    // Crea il link di conferma
+    const confirmUrl = `http://localhost:5173/validation-email?token=${confirmToken}`;
+
+    // Configura il trasporto per l'invio delle email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: EMAIL,
+        pass: EMAIL_PASSWORD,
+      },
+    });
+
+    // Prepara l'email di conferma
+    const mailOptions = {
+      from: EMAIL,
+      to: email,
+      subject: 'Please confirm your email',
+      html: `
+        <h3>Thank you for registering!</h3>
+        <p>To confirm your email address, click the link below:</p>
+        <a href="${confirmUrl}">Confirm Email</a>
+      `,
+    };
+
+    // Invia l'email
+    await transporter.sendMail(mailOptions);
+
+    // Crea il JWT per l'autenticazione
     const token = jwt.sign(
-      { userId: user._id, email: user.email, isAdmin: user.isAdmin },
+      { userId: user._id, email: user.email },
       JWT_PASSWORD,
       { expiresIn: "30d" }
     );
 
-    return json(
-      { message: 'Registration successful', token },
-      { status: 201 }
-    );
+    // Risposta con il token di autenticazione
+    return json({ message: 'Registration successful. Please check your email to confirm.', token }, { status: 201 });
   } catch (err) {
     console.error('Registration error:', err);
-    return json(
-      { error: 'Server error' },
-      { status: 500 }
-    );
+    return json({ error: 'Server error' }, { status: 500 });
   }
 }
 
