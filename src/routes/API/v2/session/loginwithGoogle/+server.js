@@ -11,7 +11,7 @@ const client = new OAuth2Client(PUBLIC_GOOGLE_CLIENT_ID);
 
 // CORS headers da includere in ogni risposta
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': "ALLOWED_ORIGIN",
+  'Access-Control-Allow-Origin': "http://localhost:5173",
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };

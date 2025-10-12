@@ -818,7 +818,7 @@ paths:
                   error:
                     type: string
                     example: Server error.
-/API/v2/students-hours:
+  /API/v2/students-hours:
     get:
       summary: Ottenere informazioni sugli orari delle lezioni e presenze studenti
       description: >
@@ -896,7 +896,7 @@ paths:
                   error:
                     type: string
                     example: Server error
-/API/v2/trentino-trasporti/lines:
+  /API/v2/trentino-trasporti/lines:
     get:
       tags:
           - Trentino Trasporti
@@ -942,7 +942,7 @@ paths:
                   error:
                     type: string
                     example: Errore nel recupero delle linee
-/API/v2/trentino-trasporti/stops:
+  /API/v2/trentino-trasporti/stops:
     get:
       tags:
           - Trentino Trasporti
@@ -1024,7 +1024,7 @@ paths:
                   error:
                     type: string
                     example: Errore nel recupero delle fermate
-/API/v2/trentino-trasporti/stops/{id}:
+  /API/v2/trentino-trasporti/stops/{id}:
     get:
       tags:
         - Trentino Trasporti
@@ -1062,7 +1062,7 @@ paths:
           description: Server error
       security:
         - BearerAuth: []
-/API/v2/trentino-trasporti/stops/{id}/timetable:
+  /API/v2/trentino-trasporti/stops/{id}/timetable:
     get:
       tags:
         - Trentino Trasporti
@@ -1125,7 +1125,7 @@ paths:
           description: Server error
       security:
         - BearerAuth: []
-/API/v2/trentino-trasporti/timetable:
+  /API/v2/trentino-trasporti/timetable:
     get:
       tags:
         - Trentino Trasporti
@@ -1174,7 +1174,7 @@ paths:
                   error:
                     type: string
                     example: Server error
-/API/v2/trentino-trasporti/stops/with_arrivals:
+  /API/v2/trentino-trasporti/stops/with_arrivals:
     get:
       tags:
           - Trentino Trasporti
@@ -1273,7 +1273,7 @@ paths:
                   error:
                     type: string
                     example: Errore nel recupero delle fermate
-/API/v2/trentino-trasporti/trips_new:
+  /API/v2/trentino-trasporti/trips_new:
     get:
       tags:
           - Trentino Trasporti
@@ -1344,14 +1344,14 @@ paths:
                   error:
                     type: string
                     example: Errore nel recupero delle fermate
-/API/v2/users:
-post:
+  /API/v2/users:
+    post:
       tags:
-        - Users
+          - Users
       summary: Registrazione nuovo utente
       description: >
-        Registra un nuovo utente con email e password, invia un'email per la conferma
-        dell'account e restituisce un token JWT di sessione.
+        Registra un nuovo utente con email e password.
+        Restituisce un token JWT in caso di successo.
       requestBody:
         required: true
         content:
@@ -1372,7 +1372,7 @@ post:
                   example: strongPassword123
       responses:
         '201':
-          description: Registrazione avviata. L'utente deve confermare via email.
+          description: Registrazione avvenuta con successo, token JWT restituito
           content:
             application/json:
               schema:
@@ -1380,29 +1380,41 @@ post:
                 properties:
                   message:
                     type: string
-                    example: Registration successful. Please check your email to confirm.
+                    example: Registration successful
                   token:
                     type: string
-                    description: "Token JWT per l'autenticazione della sessione."
         '400':
-          description: Email o password mancanti o non validi.
+          description: Email o password mancanti
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error' 
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Email and password required.
         '409':
-          description: Account già esistente con la stessa email.
+          description: Account già esistente con la stessa email
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Account already exists with this email.
         '500':
-          description: Errore interno del server.
+          description: Errore interno del server
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-get:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Server error.
+
+    get:
       tags:
           - Users
       summary: Recupera la lista degli utenti (solo admin)
@@ -1461,7 +1473,7 @@ get:
                   error:
                     type: string
                     example: Server error.
-/API/v2/user/{id}:
+  /API/v2/user/{id}:
     parameters:
       - name: id
         in: path
@@ -1688,215 +1700,233 @@ get:
                 properties:
                   error:
                     type: string
-                    example: Server error      
+                    example: Server error
 /API/v2/session/loginwithgoogle:
-  tags:
-    - Users
-  summary: Login o registrazione con Google
-  description: >
-    Verifica il token ID di Google fornito, autentica l'utente esistente
-    o registra un nuovo utente se non esiste. Restituisce un token JWT.
-  requestBody:
-    required: true
-    content:
-      application/json:
-        schema:
-          type: object
-          required:
-            - token
-          properties:
-            token:
-              type: string
-              description: Token ID di Google ottenuto dal client
-              example: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2ZT..."
-  responses:
-    '200':  
-      description: Login con Google avvenuto con successo, token JWT restituito
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Logged in with Google
-              isAdmin:
-                type: boolean
-              email:
-                type: string
-                format: email
-              token:
-                type: string
-              idToken:
-                type: string
-    '400':
-      description: Token Google mancante o non valido
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Google token missing
-    '500':
-      description: Errore interno del server durante l'autenticazione con Google
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Failed to authenticate with Google
-/API/v2/session/confirm-email:
-  tags:
-    - Users
-  summary: Conferma l'email dell'utente tramite token
-  description: >
-    Conferma l'email dell'utente utilizzando il token di conferma fornito.
-    Il token viene inviato all'utente via email durante la registrazione.
-  requestBody:
-    required: true
-    content:
-      application/json:
-        schema:
-          type: object
-          required:
-            - token
-          properties:
-            token:
-              type: string
-              description: Token di conferma email ricevuto via email
-              example: "abcdef1234567890"
-  responses:
-    '200':
-      description: Email confermata con successo
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Email confirmed successfully
-    '400':
-      description: Token mancante o non valido
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Invalid or missing token
-    '500':
-      description: Errore interno del server durante la conferma dell'email
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Server error during email confirmation
-/API/v2/user/delete-account:
-  tags:
-    - Users
-  summary: Elimina l'account dell'utente autenticato
-  description: >
-    Elimina l'account dell'utente autenticato. Richiede un token JWT valido.
-  security:
-    - BearerAuth: []
-  responses:
-    '200':
-      description: Account eliminato con successo
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Account deleted successfully
-    '401':
-      description: Token non valido o assente
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Invalid token
-    '404':
-      description: Utente non trovato
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: User not found
-    '500':
-      description: Errore interno del server durante l'eliminazione dell'account
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Server error during account deletion      
-/API/v2/Calendar-ics:
-    get:
-      tags:
-        - Calendar
-      summary: Genera un file .ics per il calendario delle notifiche dell'utente
-      description: >
-        Genera un file iCalendar (.ics) contenente gli eventi di notifica
-        per l'utente autenticato. Richiede un token JWT valido.
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: File .ics generato con successo
-          content:
-            text/calendar:
-              schema:
-                type: string
-                format: binary
-        '401':
-          description: Token non valido o assente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Invalid token
-        '404':
-          description: Utente non trovato o nessuna notifica disponibile
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: User not found or no notifications available
-        '500':
-          description: Errore interno del server durante la generazione del file .ics
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: Server error during .ics generation                            
+
+
+
+endpoint: /API/v2/session/loginwithgoogle
+
+
+methods:
+
+
+  OPTIONS:
+
+
+    description: Risponde alle richieste preflight CORS
+
+
+    response:
+
+
+      status: 204
+
+
+      headers:
+
+
+        Access-Control-Allow-Origin: ${ALLOWED_ORIGIN}
+
+
+        Access-Control-Allow-Headers: Content-Type
+
+
+        Access-Control-Allow-Methods: POST, OPTIONS
+
+
+
+
+
+  POST:
+
+
+    description: Verifica il token ID Google e autentica o registra l'utente
+
+
+    request:
+
+
+      content-type: application/json
+
+
+      body:
+
+
+        token: string (Google ID token)
+
+
+    steps:
+
+
+      - checkTokenPresent:
+
+
+          ifMissing:
+
+
+            response:
+
+
+              status: 400
+
+
+              body:
+
+
+                error: "Google token missing"
+
+
+      - verifyGoogleToken:
+
+
+          using: "google-auth-library"
+
+
+          input:
+
+
+            idToken: token
+
+
+            audience: ${PUBLIC_GOOGLE_CLIENT_ID}
+
+
+          output: payload
+
+
+      - extractEmail:
+
+
+          from: payload.email
+
+
+          ifMissing:
+
+
+            response:
+
+
+              status: 400
+
+
+              body:
+
+
+                error: "Invalid Google token"
+
+
+      - findOrCreateUser:
+
+
+          query: { email: payload.email }
+
+
+          ifNotFound:
+
+
+            create:
+
+
+              email: payload.email
+
+
+              password: null
+
+
+              isAdmin: false
+
+
+              isGoogleAuthenticated: true
+
+
+      - generateJWT:
+
+
+          library: jsonwebtoken
+
+
+          payload:
+
+
+            id: user._id
+
+
+            email: user.email
+
+
+            isAdmin: user.isAdmin
+
+
+          secret: ${JWT_PASSWORD}
+
+
+          options:
+
+
+            expiresIn: 30d
+
+
+          output: jwtToken
+
+
+      - respondSuccess:
+
+
+          status: 200
+
+
+          body:
+
+
+            message: "Logged in with Google"
+
+
+            isAdmin: user.isAdmin
+
+
+            email: user.email
+
+
+            token: jwtToken
+
+
+            idToken: token
+
+
+    onError:
+
+
+      catch:
+
+
+        log: "Google Login Error"
+
+
+        response:
+
+
+          status: 500
+
+
+          body:
+
+
+            error: "Failed to authenticate with Google"
+
+
+    corsHeaders:
+
+
+      Access-Control-Allow-Origin: ${ALLOWED_ORIGIN}
+
+
+      Access-Control-Allow-Headers: Content-Type
+
+
+      Access-Control-Allow-Methods: POST, OPTIONS
+
+
 components:
   securitySchemes:
       BearerAuth:

@@ -12,8 +12,7 @@
     User,
     ChartLine,
     MailWarning,
-    Bolt,
-	  Calendar,
+    Bolt
   } from '@lucide/svelte';
 
   let { children } = $props();
@@ -78,11 +77,6 @@
   <a class:dock-active={page.url.pathname === '/report'} href="/report">
     <MailWarning />
     <span class="dock-label">{translations[currentLang].report}</span>
-  </a>
-  
-  <a class:dock-active={page.url.pathname === '/calendar'} href="/calendar">
-    <Calendar />
-    <span class="dock-label">{translations[currentLang].calendar}</span>
   </a>
 
   {#if $isAdmin}

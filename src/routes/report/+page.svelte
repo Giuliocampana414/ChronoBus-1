@@ -13,6 +13,7 @@
   let crowdedness = $state();
   let currentLang = $state('en'); // Imposta la lingua di default
   
+  // Funzione per inviare il report
   async function sendReport() {
     postfwt('reports', { line, time, crowdedness })
       .then((data) => {
