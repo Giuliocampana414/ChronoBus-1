@@ -5,7 +5,7 @@
   import { goto } from '$app/navigation';
   import { isAdmin } from '$lib/stores/admin';
   import { onMount } from 'svelte';
-  import { GOOGLE_CLIENT_ID } from '$env/static/private';
+  import { GOOGLE_CLIENT_ID } from '$env/static/public';
 
   let email = $state('');
   let password = $state('');
