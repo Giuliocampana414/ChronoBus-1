@@ -1848,7 +1848,55 @@ get:
             properties:
               error:
                 type: string
-                example: Server error during account deletion                                
+                example: Server error during account deletion      
+/API/v2/Calendar-ics:
+    get:
+      tags:
+        - Calendar
+      summary: Genera un file .ics per il calendario delle notifiche dell'utente
+      description: >
+        Genera un file iCalendar (.ics) contenente gli eventi di notifica
+        per l'utente autenticato. Richiede un token JWT valido.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: File .ics generato con successo
+          content:
+            text/calendar:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Token non valido o assente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid token
+        '404':
+          description: Utente non trovato o nessuna notifica disponibile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: User not found or no notifications available
+        '500':
+          description: Errore interno del server durante la generazione del file .ics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Server error during .ics generation                            
 components:
   securitySchemes:
       BearerAuth:
