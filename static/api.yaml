@@ -4,7 +4,7 @@ info:
   version: 2.0.0
   description: API per il sito ChronoBus
 servers:
-  - url: https://chronobus-44gy.onrender.com/
+  - url: https://chronobus-1.onrender.com
 paths:
   /API/v2/official_report:
     get:
@@ -30,7 +30,6 @@ paths:
                   error:
                     type: string
                     example: Server error
-
     post:
       summary: Crea un nuovo report ufficiale (solo admin)
       tags:
