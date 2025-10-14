@@ -13,7 +13,7 @@
 
     let isLoading = $state(false);
     let errorMessage = $state('');
-
+    
     $effect(() => {
         if (calendar) {
             calendar.setOption('locale', $language);
