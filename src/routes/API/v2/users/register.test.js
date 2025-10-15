@@ -1,176 +1,189 @@
-import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 import { POST } from './+server.js';
 
-const ERROR_MESSAGES = {
-    INVALID_CREDENTIALS: 'Email and password required.',
-    EMAIL_EXISTS: 'Account already exists with this email.',
-    PASSWORD_TOO_SHORT: 'Password must be at least 8 characters long.',
-    INVALID_EMAIL: 'Invalid email format.'
-};
 
-// Mock external modules
+
+const mockUserFindOne = vi.fn();
+const mockUserSave = vi.fn();
+const mockUserConstructor = vi.fn();
+const mockSendMail = vi.fn(); 
+
+
 vi.mock('bcryptjs');
 vi.mock('jsonwebtoken');
-vi.mock('$lib/utils/mongodb.js', () => ({
-    User: class {
-        constructor(data) {
-            this.email = data.email;
-            this.password = data.password;
-            this._id = 'test-id';
-            this.isAdmin = false;
-        }
-        static findOne = vi.fn();
-        static create = vi.fn();
-        save = vi.fn().mockResolvedValue(this);
+
+
+vi.mock('nodemailer', () => ({
+    default: {
+      createTransport: vi.fn(() => ({
+        sendMail: (...args) => mockSendMail(...args)
+      }))
     }
 }));
+
+
+vi.mock('$lib/utils/mongodb.js', () => ({
+  User: vi.fn((...args) => mockUserConstructor(...args))
+}));
+
+const { User } = await import('$lib/utils/mongodb.js');
+vi.mocked(User).findOne = mockUserFindOne;
+
+
 vi.mock('$env/static/private', () => ({
-    JWT_PASSWORD: 'test-secret'
+  JWT_PASSWORD: 'test-jwt-secret',
+  EMAIL: 'test-from@example.com',
+  EMAIL_PASSWORD: 'test-email-password'
 }));
-vi.mock('$lib/utils/auth.js', () => ({
-    validateToken: vi.fn()
-}));
 
-import { User } from '$lib/utils/mongodb.js';
 
-describe('User Registration', () => {
-    afterAll(() => {
-        vi.resetModules();
-    });
+describe('POST /api/register', () => {
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        // Add JWT mock implementation
-        jwt.sign.mockReturnValue('test-token');
-    });
-
-    it('Registrazione di un nuovo utente con email e password validi', async () => {
-    User.findOne.mockResolvedValue(null);
-    bcrypt.hash.mockResolvedValue('hashed-password');
+  beforeEach(() => {
     
-    const mockUser = {
-        email: 'test@gmail.com',
-        password: 'hashed-password',
-        _id: 'test-id',
-        isAdmin: false,
-        save: vi.fn().mockResolvedValue(this)
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+
+  it('register a new user, send a confirmation email, and return a token', async () => {
+ 
+    mockUserFindOne.mockResolvedValue(null); 
+    vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password');
+    mockSendMail.mockResolvedValue(true); 
+
+    const savedUser = {
+      _id: 'user-id-123',
+      email: 'newuser@example.com',
+      isAdmin: false
     };
-    
-    User.create.mockResolvedValue(mockUser);
+    const userInstance = { ...savedUser, save: mockUserSave.mockResolvedValue(savedUser) };
+    mockUserConstructor.mockReturnValue(userInstance);
 
-    const request = new Request('http://localhost/api/v2/users/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            email: 'test@gmail.com',
-            password: 'password123'
-        })
+    vi.mocked(jwt.sign)
+      .mockReturnValueOnce('email-confirmation-token') 
+      .mockReturnValueOnce('auth-login-token');      
+
+    const request = new Request('http://localhost/api/register', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'newuser@example.com', password: 'password123' })
     });
 
     const response = await POST({ request });
-    const data = await response.json();
+    const body = await response.json();
+
 
     expect(response.status).toBe(201);
-    expect(data).toEqual({
-        message: 'Registration successful',
-        token: 'test-token'
-    });
+    expect(body.message).toBe('Registration successful. Please check your email to confirm.');
+    expect(body.token).toBe('auth-login-token');
+
+
+    expect(mockUserFindOne).toHaveBeenCalledWith({ email: 'newuser@example.com' });
+    expect(mockUserConstructor).toHaveBeenCalledWith({ email: 'newuser@example.com', password: 'hashed-password', isConfirmed: false });
+    expect(mockUserSave).toHaveBeenCalledTimes(1);
+
+
+    expect(jwt.sign).toHaveBeenCalledTimes(2);
+    expect(jwt.sign).toHaveBeenCalledWith({ userId: savedUser._id }, 'test-jwt-secret', { expiresIn: '3h' });
+    expect(jwt.sign).toHaveBeenCalledWith({ userId: savedUser._id, email: savedUser.email, isAdmin: savedUser.isAdmin }, 'test-jwt-secret', { expiresIn: '30d' });
     
-    // Updated JWT verification to match actual implementation
-    expect(jwt.sign).toHaveBeenCalledWith(
-        {
-            userId: mockUser._id,
-            email: mockUser.email,
-            isAdmin: mockUser.isAdmin
-        },
-        'test-secret',
-        { expiresIn: '30d' }
-    );
-});
 
-    it('Registrazione con un indirizzo email non valido (email vuota)', async () => {
-        const request = new Request('http://localhost/api/v2/users/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email: '',
-                password: 'password123'
-            })
-        });
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    const mailOptions = vi.mocked(mockSendMail).mock.calls[0][0]; 
+    expect(mailOptions.to).toBe('newuser@example.com');
+    expect(mailOptions.subject).toBe('Please confirm your email');
+    expect(mailOptions.html).toContain('http://localhost:5173/validation-email?token=email-confirmation-token');
+  });
 
-        const response = await POST({ request });
-        const data = await response.json();
+  it('email already exists', async () => {
 
-        expect(response.status).toBe(400);
-        expect(data).toEqual({ error: ERROR_MESSAGES.INVALID_CREDENTIALS });
+    mockUserFindOne.mockResolvedValue({ email: 'existing@example.com' }); 
+    const request = new Request('http://localhost/api/register', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'existing@example.com', password: 'password123' })
     });
 
-    it('Registrazione con email già registrata', async () => {
-        User.findOne.mockResolvedValue({ email: 'test@gmail.com' });
 
-        const request = new Request('http://localhost/api/v2/users/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email: 'test@gmail.com',
-                password: 'password123'
-            })
-        });
+    const response = await POST({ request });
+    const body = await response.json();
 
-        const response = await POST({ request });
-        const data = await response.json();
 
-        expect(response.status).toBe(409);
-        expect(data).toEqual({ error: ERROR_MESSAGES.EMAIL_EXISTS });
+    expect(response.status).toBe(409);
+    expect(body.error).toBe('Account already exists with this email.');
+    expect(mockSendMail).not.toHaveBeenCalled(); // L'email non deve essere inviata
+  });
+
+  it('email or password are not provided', async () => {
+    // Arrange
+    const request = new Request('http://localhost/api/register', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'test@example.com' /* password mancante */ })
     });
 
-    it('Registrazione con campo email vuoto', async () => {
-        const request = new Request('http://localhost/api/v2/users/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email: '',
-                password: 'password123'
-            })
-        });
 
-        const response = await POST({ request });
-        const data = await response.json();
+    const response = await POST({ request });
+    const body = await response.json();
 
-        expect(response.status).toBe(400);
-        expect(data).toEqual({ 
-            error: ERROR_MESSAGES.INVALID_CREDENTIALS 
-        });
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe('Email and password required.');
+  });
+  
+  it('sending the email fails', async () => {
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockUserFindOne.mockResolvedValue(null);
+    vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password');
+    mockSendMail.mockRejectedValue(new Error('SMTP connection failed')); 
+
+    const savedUser = { _id: 'user-id-123', email: 'newuser@example.com', isAdmin: false };
+    const userInstance = { ...savedUser, save: mockUserSave.mockResolvedValue(savedUser) };
+    mockUserConstructor.mockReturnValue(userInstance);
+    vi.mocked(jwt.sign).mockReturnValue('any-token');
+
+    const request = new Request('http://localhost/api/register', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'newuser@example.com', password: 'password123' })
     });
 
-    it('Registrazione con campo password vuoto', async () => {
-        const request = new Request('http://localhost/api/v2/users/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email: 'test2@gmail.com',
-                password: ''
-            })
-        });
 
-        const response = await POST({ request });
-        const data = await response.json();
+    const response = await POST({ request });
+    const body = await response.json();
 
-        expect(response.status).toBe(400);
-        expect(data).toEqual({ 
-            error: ERROR_MESSAGES.INVALID_CREDENTIALS 
-        });
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe('Server error');
+    expect(consoleErrorSpy).toHaveBeenCalled(); 
+  });
+  
+  it('user fails', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockUserFindOne.mockResolvedValue(null);
+    vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password');
+    mockUserSave.mockRejectedValue(new Error('Database write error')); // Salvataggio fallisce
+
+    const userInstance = { save: mockUserSave };
+    mockUserConstructor.mockReturnValue(userInstance);
+
+    const request = new Request('http://localhost/api/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'newuser@example.com', password: 'password123' })
     });
+
+
+    const response = await POST({ request });
+    const body = await response.json();
+
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe('Server error');
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(mockSendMail).not.toHaveBeenCalled(); 
+  });
 });
