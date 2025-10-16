@@ -54,7 +54,7 @@ export async function POST({ request }) {
     const confirmToken = jwt.sign({ userId: user._id }, JWT_PASSWORD, { expiresIn: '3h' });
 
     // Crea il link di conferma
-    const confirmUrl = `http://localhost:5173/validation-email?token=${confirmToken}`;
+    const confirmUrl = `https://chronobus-1.onrender.com/validation-email?token=${confirmToken}`;
 
     // Configura il trasporto per l'invio delle email
     const transporter = nodemailer.createTransport({
