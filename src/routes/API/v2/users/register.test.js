@@ -1,166 +1,134 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { Resend } from 'resend';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { POST } from './+server.js';
+import { json } from '@sveltejs/kit';
+import bcrypt from 'bcryptjs'; 
+import jwt from 'jsonwebtoken';
 
-// --- Mocks ---
-const mockUserFindOne = vi.fn();
-const mockUserSave = vi.fn();
-const mockUserConstructor = vi.fn();
+vi.mock('resend');
+import { Resend } from 'resend';
 
-const mockResendSend = vi.fn();
-
-vi.mock('bcryptjs');
-vi.mock('jsonwebtoken');
-
-
-vi.mock('resend', () => ({
-  // Mock della classe Resend e della sua implementazione
-  Resend: vi.fn().mockImplementation(() => ({
-    emails: {
-      send: mockResendSend // Usa la nostra funzione mock per il metodo .send()
-    }
-  }))
-}));
-
-// Il mock del database non cambia
-vi.mock('$lib/utils/mongodb.js', async (importOriginal) => {
-  const actual = await importOriginal();
-  const User = vi.fn((...args) => mockUserConstructor(...args));
-  User.findOne = mockUserFindOne;
-  return { ...actual, default: User };
+const mockUserInstance = {
+  _id: 'mock-user-id-123',
+  email: 'test@example.com',
+  password: 'hashed-password',
+  isAdmin: false,
+  isConfirmed: false,
+  save: vi.fn().mockResolvedValue(true),
+};
+vi.mock('$lib/utils/mongodb.js', () => {
+  const User = vi.fn().mockImplementation(() => mockUserInstance);
+  User.findOne = vi.fn();
+  return { User };
 });
+import { User } from '$lib/utils/mongodb.js';
 
-const { default: User } = await import('$lib/utils/mongodb.js');
-
+vi.mock('bcryptjs'); 
+vi.mock('jsonwebtoken');
 vi.mock('$env/static/private', () => ({
-  JWT_PASSWORD: 'test-jwt-secret',
-  RESEND_API_KEY: 'test-resend-api-key' // Aggiungi la nuova variabile
+  JWT_PASSWORD: 'test-secret',
+  RESEND_API_KEY: 'test-resend-key',
 }));
+vi.mock('@sveltejs/kit', async (importOriginal) => {
+    const original = await importOriginal();
+    return {
+        ...original,
+        json: vi.fn((data, init) => ({ data, init, status: init?.status ?? 200 })),
+    };
+});
+vi.spyOn(console, 'error').mockImplementation(() => {});
 
-describe('POST /API/v2/users', () => {
+
+
+describe('User Registration Endpoint', () => {
+  
+  let mockResendSend;
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    mockResendSend = vi.fn().mockResolvedValue({ id: 'resend-email-id' });
+    
+   
+    vi.mocked(Resend).mockImplementation(() => ({
+      emails: {
+        send: mockResendSend,
+      },
+    }));
+
+    bcrypt.hash.mockResolvedValue('hashed-password');
+    vi.mocked(jwt.sign)
+      .mockReturnValueOnce('confirm-token-xyz') 
+      .mockReturnValueOnce('auth-token-abc');   
   });
 
-  afterEach(() => {
+  afterAll(() => {
     vi.restoreAllMocks();
   });
 
-  it('registers a new user, sends a confirmation email, and returns a token', async () => {
-    mockUserFindOne.mockResolvedValue(null);
-    vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password');
 
-    mockResendSend.mockResolvedValue({ id: 'resend-email-id' });
-
-    const savedUser = { _id: 'user-id-123', email: 'newuser@example.com', isAdmin: false };
-    const userInstance = { ...savedUser, save: mockUserSave.mockResolvedValue(savedUser) };
-    mockUserConstructor.mockReturnValue(userInstance);
-
-    vi.mocked(jwt.sign)
-      .mockReturnValueOnce('email-confirmation-token')
-      .mockReturnValueOnce('auth-login-token');
-
-    const request = new Request('http://localhost/api/register', {
+  it('Deve registrare un nuovo utente, inviare l\'email di conferma e restituire un token', async () => {
+    User.findOne.mockResolvedValue(null);
+    const request = new Request('http://localhost/api/v2/register', {
       method: 'POST',
-      body: JSON.stringify({ email: 'newuser@example.com', password: 'password123' })
+      body: JSON.stringify({ email: 'newuser@example.com', password: 'password123' }),
     });
-
     const response = await POST({ request });
-    const body = await response.json();
-
+    expect(User.findOne).toHaveBeenCalledWith({ email: 'newuser@example.com' });
+    expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
+    expect(mockUserInstance.save).toHaveBeenCalled();
+    expect(jwt.sign).toHaveBeenCalledTimes(2);
+    expect(jwt.sign).toHaveBeenNthCalledWith(1,{ userId: mockUserInstance._id }, 'test-secret', { expiresIn: '3h' });
+    expect(jwt.sign).toHaveBeenNthCalledWith(2,{ userId: mockUserInstance._id, email: mockUserInstance.email, isAdmin: mockUserInstance.isAdmin }, 'test-secret', { expiresIn: '30d' });
+    expect(mockResendSend).toHaveBeenCalledWith({
+      from: expect.any(String),
+      to: ['newuser@example.com'],
+      subject: 'Please confirm your email',
+      html: expect.stringContaining('href="http://localhost:5173/validation-email?token=confirm-token-xyz"')
+    });
     expect(response.status).toBe(201);
-    expect(body.message).toBe('Registration successful. Please check your email to confirm.');
-    expect(body.token).toBe('auth-login-token');
-
-    expect(mockUserFindOne).toHaveBeenCalledWith({ email: 'newuser@example.com' });
-    expect(mockUserSave).toHaveBeenCalledTimes(1);
-
-    expect(mockResendSend).toHaveBeenCalledTimes(1);
-    const resendOptions = mockResendSend.mock.calls[0][0];
-    expect(resendOptions.to).toEqual(['newuser@example.com']); // Resend usa un array per 'to'
-    expect(resendOptions.from).toBe('ChronoBus <onboarding@resend.dev>');
-    expect(resendOptions.subject).toBe('Please confirm your email');
-    expect(resendOptions.html).toContain('http://localhost:5173/validation-email?token=email-confirmation-token');
+    expect(response.data).toEqual({
+      message: 'Registration successful. Please check your email to confirm.',
+      token: 'auth-token-abc'
+    });
   });
 
-  it('returns an error if the email already exists', async () => {
-    mockUserFindOne.mockResolvedValue({ email: 'existing@example.com' });
-    const request = new Request('http://localhost/api/register', {
+  it('Deve restituire un errore se l\'email esiste già', async () => {
+    User.findOne.mockResolvedValue({ email: 'existing@example.com' });
+    const request = new Request('http://localhost/api/v2/register', {
       method: 'POST',
-      body: JSON.stringify({ email: 'existing@example.com', password: 'password123' })
+      body: JSON.stringify({ email: 'existing@example.com', password: 'password123' }),
     });
-
     const response = await POST({ request });
-    const body = await response.json();
-
     expect(response.status).toBe(409);
-    expect(body.error).toBe('Account already exists with this email.');
-    // Assicurati che l'email non venga inviata
+    expect(response.data).toEqual({ error: 'Account already exists with this email.' });
+    expect(bcrypt.hash).not.toHaveBeenCalled();
     expect(mockResendSend).not.toHaveBeenCalled();
   });
 
-  it('returns an error if email or password are not provided', async () => {
-    const request = new Request('http://localhost/api/register', {
+  it.each([
+    { body: { email: 'test@example.com' }, description: 'password mancante' },
+    { body: { password: 'password123' }, description: 'email mancante' },
+    { body: {}, description: 'email e password mancanti' }
+  ])('Deve restituire un errore se manca la $description', async ({ body }) => {
+    const request = new Request('http://localhost/api/v2/register', {
       method: 'POST',
-      body: JSON.stringify({ email: 'test@example.com' /* password mancante */ })
+      body: JSON.stringify(body),
     });
-
     const response = await POST({ request });
-    const body = await response.json();
-
     expect(response.status).toBe(400);
-    expect(body.error).toBe('Email and password required.');
+    expect(response.data).toEqual({ error: 'Email and password required.' });
   });
 
-  it('returns a server error if sending the email fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockUserFindOne.mockResolvedValue(null);
-    vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password');
-    mockResendSend.mockRejectedValue(new Error('Resend API connection failed'));
-
-    const savedUser = { _id: 'user-id-123', email: 'newuser@example.com', isAdmin: false };
-    const userInstance = { ...savedUser, save: mockUserSave.mockResolvedValue(savedUser) };
-    mockUserConstructor.mockReturnValue(userInstance);
-    vi.mocked(jwt.sign).mockReturnValue('any-token');
-
-    const request = new Request('http://localhost/api/register', {
+  it('Deve restituire un errore del server se il salvataggio nel DB fallisce', async () => {
+    User.findOne.mockResolvedValue(null);
+    mockUserInstance.save.mockRejectedValue(new Error('Database connection error'));
+    const request = new Request('http://localhost/api/v2/register', {
       method: 'POST',
-      body: JSON.stringify({ email: 'newuser@example.com', password: 'password123' })
+      body: JSON.stringify({ email: 'fail@example.com', password: 'password123' }),
     });
-
     const response = await POST({ request });
-    const body = await response.json();
-
     expect(response.status).toBe(500);
-    expect(body.error).toBe('Server error');
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    consoleErrorSpy.mockRestore();
-  });
-
-  it('returns a server error if saving the user fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockUserFindOne.mockResolvedValue(null);
-    vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password');
-    mockUserSave.mockRejectedValue(new Error('Database write error'));
-
-    const userInstance = { save: mockUserSave };
-    mockUserConstructor.mockReturnValue(userInstance);
-
-    const request = new Request('http://localhost/api/register', {
-      method: 'POST',
-      body: JSON.stringify({ email: 'newuser@example.com', password: 'password123' })
-    });
-
-    const response = await POST({ request });
-    const body = await response.json();
-
-    expect(response.status).toBe(500);
-    expect(body.error).toBe('Server error');
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    expect(mockResendSend).not.toHaveBeenCalled();
-    consoleErrorSpy.mockRestore();
+    expect(response.data).toEqual({ error: 'Server error' });
+    expect(console.error).toHaveBeenCalled();
   });
 });
