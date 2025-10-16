@@ -5,7 +5,6 @@ import { EMAIL } from '$env/static/private';
 import { mongoose, User } from '$lib/utils/mongodb.js';
 import { json } from '@sveltejs/kit';
 import { isAdmin } from '$lib/stores/admin';
-import nodemailer from 'nodemailer';
 
 /**
  * Gestisce l'invio del codice per il cambio password via email tramite richiesta POST.

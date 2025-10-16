@@ -4,7 +4,7 @@ import { JWT_PASSWORD } from '$env/static/private';
 import { mongoose, User } from '$lib/utils/mongodb.js';
 import { json } from '@sveltejs/kit';
 import { isAdmin } from '$lib/stores/admin';
-import nodemailer from 'nodemailer';
+
 
 /**
  * Gestisce il cambio password di un utente che ha dimenticato la password tramite richiesta POST.
