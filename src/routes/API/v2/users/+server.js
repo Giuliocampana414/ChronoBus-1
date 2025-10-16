@@ -30,72 +30,71 @@ import nodemailer from 'nodemailer';
  *   - 500: Errore interno del server.
 */
 export async function POST({ request }) {
+  // 1. Log di inizio. Se non vedi questo, l'endpoint non viene nemmeno raggiunto.
+  console.log('[DEBUG] Richiesta di registrazione ricevuta.');
+
   try {
     const { email, password } = await request.json();
+    console.log(`[DEBUG] Dati ricevuti per: ${email}`);
 
     if (!email || !password) {
+      console.error('[DEBUG] Errore: Email o password mancanti.');
       return json({ error: 'Email and password required.' }, { status: 400 });
     }
 
-    // Verifica se l'utente esiste già
     const existing = await User.findOne({ email });
     if (existing) {
+      console.warn(`[DEBUG] Tentativo di registrazione per email già esistente: ${email}`);
       return json({ error: 'Account already exists with this email.' }, { status: 409 });
     }
 
-    // Cifra la password
+    console.log('[DEBUG] Hashing della password...');
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Crea un nuovo utente
+    console.log('[DEBUG] Creazione nuovo utente nel database...');
     const user = new User({ email, password: hashedPassword, isConfirmed: false });
     await user.save();
+    console.log(`[DEBUG] Utente creato con successo con ID: ${user._id}`);
 
-    // Crea il token di conferma dell'email
+    // --- SEZIONE EMAIL ---
+    console.log('[DEBUG] Inizio preparazione invio email...');
     const confirmToken = jwt.sign({ userId: user._id }, JWT_PASSWORD, { expiresIn: '3h' });
-
-    // Crea il link di conferma
     const confirmUrl = `https://chronobus-1.onrender.com/validation-email?token=${confirmToken}`;
 
-    // Configura il trasporto per l'invio delle email
+    console.log('[DEBUG] Creazione transporter Nodemailer...');
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: EMAIL,
-        pass: EMAIL_PASSWORD,
+        pass: EMAIL_PASSWORD, // Deve essere la Password per le App di 16 cifre
       },
     });
 
-    // Prepara l'email di conferma
-    const mailOptions = {
+    console.log('[DEBUG] Opzioni email preparate. Sto per inviare...');
+    await transporter.sendMail({
       from: EMAIL,
       to: email,
       subject: 'Please confirm your email',
-      html: `
-        <h3>Thank you for registering!</h3>
-        <p>To confirm your email address, click the link below:</p>
-        <a href="${confirmUrl}">Confirm Email</a>
-      `,
-    };
+      html: `<p>Click here to confirm: <a href="${confirmUrl}">Confirm</a></p>`,
+    });
+    console.log(`[DEBUG] Email inviata con successo a ${email}`);
+    // --- FINE SEZIONE EMAIL ---
 
-    // Invia l'email
-    await transporter.sendMail(mailOptions);
+    const token = jwt.sign({ userId: user._id, email: user.email, isAdmin: user.isAdmin }, JWT_PASSWORD, { expiresIn: "30d" });
 
-    // Crea il JWT per l'autenticazione
-    const token = jwt.sign(
-      { userId: user._id, email: user.email , isAdmin: user.isAdmin },
-      JWT_PASSWORD,
-      { expiresIn: "30d" }
-    );
+    return json({ message: 'Registration successful. Please check your email.', token }, { status: 201 });
 
-   } catch (emailError) {
-  console.error('CRITICAL: User was created, but confirmation email failed to send.', emailError);
-  // L'email è fallita, ma l'utente è stato creato.
-  // Restituiamo comunque successo per permettere il login e il redirect!
-  return json({
-    message: 'Registration successful, but we could not send the confirmation email.', // Messaggio diverso per il debug
-    token // Invia comunque il token!
-  }, { status: 201 }); // Restituisci comunque 201 (Created)
-}
+  } catch (err) {
+    // 2. Log dell'errore DETTAGLIATO. Questo è il log più importante.
+    console.error('--- ERRORE NEL BLOCCO CATCH ---');
+    console.error('TIPO DI ERRORE:', typeof err);
+    console.error('MESSAGGIO DI ERRORE:', err.message);
+    console.error('STACK TRACE:', err.stack);
+    console.error('ERRORE COMPLETO:', JSON.stringify(err, null, 2));
+    console.error('--- FINE ERRORE ---');
+
+    return json({ error: 'Server error' }, { status: 500 });
+  }
 }
 
 export async function GET({ request }) {
