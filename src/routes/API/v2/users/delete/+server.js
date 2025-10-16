@@ -21,7 +21,7 @@ export async function DELETE({ request }) {
 		}
 
 		// Elimina l'utente dal database usando Mongoose
-		const result = await User.deleteOne({ userId: decoded.userId});
+		const result = await User.deleteOne({ _id: decoded.userId});
 
 		if (result.deletedCount === 1) {
 			return json({ message: 'Account successfully deleted' }, { status: 200 });
