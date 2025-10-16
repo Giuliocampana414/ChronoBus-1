@@ -40,7 +40,7 @@ describe('DELETE /account', () => {
         expect(response.status).toBe(200);
         expect(body.message).toBe('Account successfully deleted');
         expect(jwt.verify).toHaveBeenCalledWith(mockToken, 'una-password-segreta-per-il-test');
-        expect(User.deleteOne).toHaveBeenCalledWith({ userId: mockUserId });
+        expect(User.deleteOne).toHaveBeenCalledWith({ _id: mockUserId });
     });
 
     it('dovrebbe restituire 401 se manca il token', async () => {
