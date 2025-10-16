@@ -5,7 +5,7 @@ import { User } from '$lib/utils/mongodb.js';
 import { json, redirect } from '@sveltejs/kit';
 import { validateToken } from '$lib/utils/auth.js';
 import { Resend } from 'resend';
-import { JWT_PASSWORD, RESEND_API_KEY } from '$env/static/private';
+import { RESEND_API_KEY } from '$env/static/private';
 import { ALLOWED_ORIGIN } from '$env/static/public';
 /**
  * Gestisce la registrazione di un nuovo utente tramite richiesta POST.
