@@ -54,11 +54,11 @@ export async function POST({ request }) {
     const confirmToken = jwt.sign({ userId: user._id }, JWT_PASSWORD, { expiresIn: '3h' });
 
     // Crea il link di conferma
-    const confirmUrl = `https://chronobus-1.onrender.com/validation-email?token=${confirmToken}`;
+    const confirmUrl = `http://localhost:5173/validation-email?token=${confirmToken}`;
 
     // Configura il trasporto per l'invio delle email
     const transporter = nodemailer.createTransport({
-      service: 'gmail', 
+      service: 'gmail',
       auth: {
         user: EMAIL,
         pass: EMAIL_PASSWORD,
@@ -87,12 +87,15 @@ export async function POST({ request }) {
       { expiresIn: "30d" }
     );
 
-    // Risposta con il token di autenticazione
-    return json({ message: 'Registration successful. Please check your email to confirm.', token }, { status: 201 });
-  } catch (err) {
-    console.error('Registration error:', err);
-    return json({ error: 'Server error' }, { status: 500 });
-  }
+   } catch (emailError) {
+  console.error('CRITICAL: User was created, but confirmation email failed to send.', emailError);
+  // L'email è fallita, ma l'utente è stato creato.
+  // Restituiamo comunque successo per permettere il login e il redirect!
+  return json({
+    message: 'Registration successful, but we could not send the confirmation email.', // Messaggio diverso per il debug
+    token // Invia comunque il token!
+  }, { status: 201 }); // Restituisci comunque 201 (Created)
+}
 }
 
 export async function GET({ request }) {
