@@ -4,7 +4,6 @@ import { JWT_PASSWORD } from '$env/static/private';
 import { mongoose, User } from '$lib/utils/mongodb.js';
 import { json } from '@sveltejs/kit';
 import { isAdmin } from '$lib/stores/admin';
-import nodemailer from 'nodemailer';
 import { EMAIL,EMAIL_PASSWORD } from '$env/static/private';
 /**
  * Gestisce il login di un utente tramite richiesta POST.

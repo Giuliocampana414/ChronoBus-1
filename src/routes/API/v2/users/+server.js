@@ -4,9 +4,9 @@ import { JWT_PASSWORD } from '$env/static/private';
 import { User } from '$lib/utils/mongodb.js';
 import { json, redirect } from '@sveltejs/kit';
 import { validateToken } from '$lib/utils/auth.js';
-import { EMAIL,EMAIL_PASSWORD} from '$env/static/private';
-import nodemailer from 'nodemailer';
-
+import { Resend } from 'resend';
+import { JWT_PASSWORD, RESEND_API_KEY } from '$env/static/private';
+import { ALLOWED_ORIGIN } from '$env/static/public';
 /**
  * Gestisce la registrazione di un nuovo utente tramite richiesta POST.
  *
@@ -29,70 +29,58 @@ import nodemailer from 'nodemailer';
  *   - 409: Account già esistente con la stessa email.
  *   - 500: Errore interno del server.
 */
-export async function POST({ request }) {
-  // 1. Log di inizio. Se non vedi questo, l'endpoint non viene nemmeno raggiunto.
-  console.log('[DEBUG] Richiesta di registrazione ricevuta.');
 
+// Inizializza Resend una sola volta fuori dalla funzione
+const resend = new Resend(RESEND_API_KEY);
+
+export async function POST({ request }) {
   try {
     const { email, password } = await request.json();
-    console.log(`[DEBUG] Dati ricevuti per: ${email}`);
 
     if (!email || !password) {
-      console.error('[DEBUG] Errore: Email o password mancanti.');
       return json({ error: 'Email and password required.' }, { status: 400 });
     }
 
+    // Verifica se l'utente esiste già
     const existing = await User.findOne({ email });
     if (existing) {
-      console.warn(`[DEBUG] Tentativo di registrazione per email già esistente: ${email}`);
       return json({ error: 'Account already exists with this email.' }, { status: 409 });
     }
 
-    console.log('[DEBUG] Hashing della password...');
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    console.log('[DEBUG] Creazione nuovo utente nel database...');
     const user = new User({ email, password: hashedPassword, isConfirmed: false });
     await user.save();
-    console.log(`[DEBUG] Utente creato con successo con ID: ${user._id}`);
 
-    // --- SEZIONE EMAIL ---
-    console.log('[DEBUG] Inizio preparazione invio email...');
     const confirmToken = jwt.sign({ userId: user._id }, JWT_PASSWORD, { expiresIn: '3h' });
-    const confirmUrl = `https://chronobus-1.onrender.com/validation-email?token=${confirmToken}`;
+    
 
-    console.log('[DEBUG] Creazione transporter Nodemailer...');
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: EMAIL,
-        pass: EMAIL_PASSWORD, // Deve essere la Password per le App di 16 cifre
-      },
-    });
+    const confirmUrl = `${ALLOWED_ORIGIN}/validation-email?token=${confirmToken}`;
 
-    console.log('[DEBUG] Opzioni email preparate. Sto per inviare...');
-    await transporter.sendMail({
-      from: EMAIL,
-      to: email,
+    // Invia l'email di conferma usando Resend
+    await resend.emails.send({
+      from: 'ChronoBus <onboarding@resend.dev>', // Puoi personalizzare il nome
+      to: [email],
       subject: 'Please confirm your email',
-      html: `<p>Click here to confirm: <a href="${confirmUrl}">Confirm</a></p>`,
+      html: `
+        <h3>Thank you for registering!</h3>
+        <p>To confirm your email address, click the link below:</p>
+        <a href="${confirmUrl}">Confirm Email</a>
+      `,
     });
-    console.log(`[DEBUG] Email inviata con successo a ${email}`);
-    // --- FINE SEZIONE EMAIL ---
 
-    const token = jwt.sign({ userId: user._id, email: user.email, isAdmin: user.isAdmin }, JWT_PASSWORD, { expiresIn: "30d" });
+    // Crea il JWT per l'autenticazione
+    const token = jwt.sign(
+      { userId: user._id, email: user.email, isAdmin: user.isAdmin },
+      JWT_PASSWORD,
+      { expiresIn: "30d" } 
+    );
 
-    return json({ message: 'Registration successful. Please check your email.', token }, { status: 201 });
-
+  
+    return json({ message: 'Registration successful. Please check your email to confirm.', token }, { status: 201 });
   } catch (err) {
-    // 2. Log dell'errore DETTAGLIATO. Questo è il log più importante.
-    console.error('--- ERRORE NEL BLOCCO CATCH ---');
-    console.error('TIPO DI ERRORE:', typeof err);
-    console.error('MESSAGGIO DI ERRORE:', err.message);
-    console.error('STACK TRACE:', err.stack);
-    console.error('ERRORE COMPLETO:', JSON.stringify(err, null, 2));
-    console.error('--- FINE ERRORE ---');
-
+    console.error('Registration error:', err);
     return json({ error: 'Server error' }, { status: 500 });
   }
 }
