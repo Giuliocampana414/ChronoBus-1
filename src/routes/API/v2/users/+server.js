@@ -6,7 +6,6 @@ import { json, redirect } from '@sveltejs/kit';
 import { validateToken } from '$lib/utils/auth.js';
 import { Resend } from 'resend';
 import { RESEND_API_KEY } from '$env/static/private';
-import { ALLOWED_ORIGIN } from '$env/static/public';
 /**
  * Gestisce la registrazione di un nuovo utente tramite richiesta POST.
  *
@@ -56,7 +55,7 @@ export async function POST({ request }) {
     const confirmToken = jwt.sign({ userId: user._id }, JWT_PASSWORD, { expiresIn: '3h' });
     
 
-    const confirmUrl = `${ALLOWED_ORIGIN}/validation-email?token=${confirmToken}`;
+    const confirmUrl = `https://chronobus-1.onrender.com/validation-email?token=${confirmToken}`;
 
     // Invia l'email di conferma usando Resend
     await resend.emails.send({
