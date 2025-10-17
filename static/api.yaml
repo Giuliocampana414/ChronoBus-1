@@ -155,7 +155,6 @@ paths:
                   error:
                     type: string
                     example: Invalid ID or server error
-
     delete:
       summary: Elimina un report ufficiale per ID
       tags:
@@ -270,7 +269,6 @@ paths:
                   error:
                     type: string
                     example: Server error
-
     post:
       summary: Crea un nuovo report (autenticazione richiesta)
       tags:
@@ -391,7 +389,6 @@ paths:
                   error:
                     type: string
                     example: Invalid ID or server error
-
     delete:
       summary: Elimina un report per ID
       tags:
@@ -448,6 +445,8 @@ paths:
   /API/v2/rush-hours:
     get:
       summary: Ottieni la previsione delle ore di punta per linea in base ai report di un giorno specifico
+      tags:
+        - Rush Hours
       parameters:
         - name: date
           in: query
@@ -580,9 +579,11 @@ paths:
                   error:
                     type: string
                     example: Server error.
-/API/v2/session/pswrec/modulecheck:
+  /API/v2/session/pswrec/modulecheck:
     post:
       summary: Cambia la password di un utente tramite codice di recupero
+      tags:
+        - Authentication
       description: >
         Cambia la password di un utente, dopo aver verificato email, codice di recupero e nuova password.
         Il codice deve essere stato ricevuto via email in una richiesta precedente.
@@ -662,9 +663,11 @@ paths:
                   error:
                     type: string
                     example: Server error.
-/API/v2/session/pswrec:
+  /API/v2/session/pswrec:
     post:
       summary: Invia codice cambio password all'utente
+      tags:
+        - Authentication
       description: >
         Riceve una email, verifica l'esistenza dell'utente e invia un codice numerico via email
         per il cambio password. Il codice è hashato e salvato nel database.
@@ -723,9 +726,11 @@ paths:
                   error:
                     type: string
                     example: Server error.
-/API/v2/session/changePsw:
+  /API/v2/session/changePsw:
     post:
       summary: Cambia la password dell'utente
+      tags:
+        - Authentication
       description: >
         Gestisce il cambio password. Richiede email, vecchia password e nuova password.
       requestBody:
@@ -817,9 +822,11 @@ paths:
                   error:
                     type: string
                     example: Server error.
-/API/v2/students-hours:
+  /API/v2/students-hours:
     get:
       summary: Ottenere informazioni sugli orari delle lezioni e presenze studenti
+      tags:
+        - University
       description: >
         Restituisce le classi che hanno lezioni nel giorno specificato,
         con dettagli su orari, numero di studenti e tasso di frequenza.
@@ -895,10 +902,10 @@ paths:
                   error:
                     type: string
                     example: Server error
-/API/v2/trentino-trasporti/lines:
+  /API/v2/trentino-trasporti/lines:
     get:
       tags:
-          - Trentino Trasporti
+        - Trentino Trasporti
       summary: Recupera le linee di trasporto da Trentino Trasporti
       description: >
         Restituisce la lista delle linee di trasporto per l'area 23,
@@ -923,7 +930,6 @@ paths:
                     routeColor:
                       type: string
                       example: "F5C500"
-                    # Aggiungi altre proprietà che esistono nell'oggetto linea qui
         '403':
           description: Richiesta da origine non consentita
           content:
@@ -941,10 +947,10 @@ paths:
                   error:
                     type: string
                     example: Errore nel recupero delle linee
-/API/v2/trentino-trasporti/stops:
+  /API/v2/trentino-trasporti/stops:
     get:
       tags:
-          - Trentino Trasporti
+        - Trentino Trasporti
       summary: Recupera le fermate del trasporto pubblico a Trento
       description: >
         Restituisce la lista delle fermate di tipo "U" filtrate per la città di Trento.
@@ -1023,11 +1029,13 @@ paths:
                   error:
                     type: string
                     example: Errore nel recupero delle fermate
-/API/v2/trentino-trasporti/stops/{id}:
+  /API/v2/trentino-trasporti/stops/{id}:
     get:
       tags:
         - Trentino Trasporti
       summary: Get stop details
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1059,13 +1067,13 @@ paths:
           description: Stop not found
         '500':
           description: Server error
-      security:
-        - BearerAuth: []
-/API/v2/trentino-trasporti/stops/{id}/timetable:
+  /API/v2/trentino-trasporti/stops/{id}/timetable:
     get:
       tags:
         - Trentino Trasporti
       summary: Get stop timetable
+      security:
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1122,9 +1130,7 @@ paths:
           description: Stop not found
         '500':
           description: Server error
-      security:
-        - BearerAuth: []
-/API/v2/trentino-trasporti/timetable:
+  /API/v2/trentino-trasporti/timetable:
     get:
       tags:
         - Trentino Trasporti
@@ -1173,10 +1179,10 @@ paths:
                   error:
                     type: string
                     example: Server error
-/API/v2/trentino-trasporti/stops/with_arrivals:
+  /API/v2/trentino-trasporti/stops/with_arrivals:
     get:
       tags:
-          - Trentino Trasporti
+        - Trentino Trasporti
       summary: Recupera le fermate di Trento con le prossime corse in arrivo
       description: >
         Restituisce le fermate di tipo "U" filtrate per la città di Trento.
@@ -1272,10 +1278,10 @@ paths:
                   error:
                     type: string
                     example: Errore nel recupero delle fermate
-/API/v2/trentino-trasporti/trips_new:
+  /API/v2/trentino-trasporti/trips_new:
     get:
       tags:
-          - Trentino Trasporti
+        - Trentino Trasporti
       summary: Recupera le corse in arrivo per una fermata specifica
       description: >
         Restituisce le corse in arrivo filtrate per ID fermata (stopId).
@@ -1305,8 +1311,6 @@ paths:
                 type: array
                 items:
                   type: object
-                  # Le proprietà degli oggetti dipendono dai dati API di trentino trasporti,
-                  # qui è un esempio generico, da adattare ai dati reali
                   properties:
                     routeId:
                       type: string
@@ -1315,7 +1319,6 @@ paths:
                       type: string
                       format: date-time
                       example: "2025-06-08T14:30:00Z"
-                    # aggiungi altre proprietà come da API originale
         '400':
           description: Parametro stopId mancante o non valido
           content:
@@ -1343,8 +1346,8 @@ paths:
                   error:
                     type: string
                     example: Errore nel recupero delle fermate
-/API/v2/users:
-post:
+  /API/v2/users:
+    post:
       tags:
         - Users
       summary: Registrazione nuovo utente
@@ -1388,7 +1391,7 @@ post:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error' 
+                $ref: '#/components/schemas/Error'
         '409':
           description: Account già esistente con la stessa email.
           content:
@@ -1401,9 +1404,9 @@ post:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-get:
+    get:
       tags:
-          - Users
+        - Users
       summary: Recupera la lista degli utenti (solo admin)
       description: >
         Restituisce la lista completa degli utenti. Accesso consentito solo agli admin.
@@ -1460,7 +1463,7 @@ get:
                   error:
                     type: string
                     example: Server error.
-/API/v2/user/{id}:
+  /API/v2/user/{id}:
     parameters:
       - name: id
         in: path
@@ -1470,7 +1473,7 @@ get:
           type: string
     get:
       tags:
-          - Users
+        - Users
       summary: Ottieni un utente per ID (solo admin)
       security:
         - BearerAuth: []
@@ -1535,10 +1538,9 @@ get:
                   error:
                     type: string
                     example: Server error
-
     delete:
       tags:
-          - Users
+        - Users
       summary: Elimina un utente per ID (admin o utente stesso)
       security:
         - BearerAuth: []
@@ -1593,10 +1595,9 @@ get:
                   error:
                     type: string
                     example: Server error
-
     patch:
       tags:
-          - Users
+        - Users
       summary: Aggiorna utente (admin o utente stesso)
       security:
         - BearerAuth: []
@@ -1687,168 +1688,171 @@ get:
                 properties:
                   error:
                     type: string
-                    example: Server error      
-/API/v2/session/loginwithgoogle:
-  tags:
-    - Users
-  summary: Login o registrazione con Google
-  description: >
-    Verifica il token ID di Google fornito, autentica l'utente esistente
-    o registra un nuovo utente se non esiste. Restituisce un token JWT.
-  requestBody:
-    required: true
-    content:
-      application/json:
-        schema:
-          type: object
-          required:
-            - token
-          properties:
-            token:
-              type: string
-              description: Token ID di Google ottenuto dal client
-              example: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2ZT..."
-  responses:
-    '200':  
-      description: Login con Google avvenuto con successo, token JWT restituito
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Logged in with Google
-              isAdmin:
-                type: boolean
-              email:
-                type: string
-                format: email
-              token:
-                type: string
-              idToken:
-                type: string
-    '400':
-      description: Token Google mancante o non valido
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Google token missing
-    '500':
-      description: Errore interno del server durante l'autenticazione con Google
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Failed to authenticate with Google
-/API/v2/session/confirm-email:
-  tags:
-    - Users
-  summary: Conferma l'email dell'utente tramite token
-  description: >
-    Conferma l'email dell'utente utilizzando il token di conferma fornito.
-    Il token viene inviato all'utente via email durante la registrazione.
-  requestBody:
-    required: true
-    content:
-      application/json:
-        schema:
-          type: object
-          required:
-            - token
-          properties:
-            token:
-              type: string
-              description: Token di conferma email ricevuto via email
-              example: "abcdef1234567890"
-  responses:
-    '200':
-      description: Email confermata con successo
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Email confirmed successfully
-    '400':
-      description: Token mancante o non valido
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Invalid or missing token
-    '500':
-      description: Errore interno del server durante la conferma dell'email
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Server error during email confirmation
-/API/v2/user/delete-account:
-  tags:
-    - Users
-  summary: Elimina l'account dell'utente autenticato
-  description: >
-    Elimina l'account dell'utente autenticato. Richiede un token JWT valido.
-  security:
-    - BearerAuth: []
-  responses:
-    '200':
-      description: Account eliminato con successo
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Account deleted successfully
-    '401':
-      description: Token non valido o assente
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Invalid token
-    '404':
-      description: Utente non trovato
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: User not found
-    '500':
-      description: Errore interno del server durante l'eliminazione dell'account
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Server error during account deletion      
-/API/v2/Calendar-ics:
+                    example: Server error
+  /API/v2/session/loginwithgoogle:
+    post:
+      tags:
+        - Authentication
+      summary: Login o registrazione con Google
+      description: >
+        Verifica il token ID di Google fornito, autentica l'utente esistente
+        o registra un nuovo utente se non esiste. Restituisce un token JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: Token ID di Google ottenuto dal client
+                  example: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2ZT..."
+      responses:
+        '200':
+          description: Login con Google avvenuto con successo, token JWT restituito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged in with Google
+                  isAdmin:
+                    type: boolean
+                  email:
+                    type: string
+                    format: email
+                  token:
+                    type: string
+                  idToken:
+                    type: string
+        '400':
+          description: Token Google mancante o non valido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Google token missing
+        '500':
+          description: Errore interno del server durante l'autenticazione con Google
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to authenticate with Google
+  /API/v2/session/confirm-email:
+    post:
+      tags:
+        - Authentication
+      summary: Conferma l'email dell'utente tramite token
+      description: >
+        Conferma l'email dell'utente utilizzando il token di conferma fornito.
+        Il token viene inviato all'utente via email durante la registrazione.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: Token di conferma email ricevuto via email
+                  example: "abcdef1234567890"
+      responses:
+        '200':
+          description: Email confermata con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Email confirmed successfully
+        '400':
+          description: Token mancante o non valido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid or missing token
+        '500':
+          description: Errore interno del server durante la conferma dell'email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Server error during email confirmation
+  /API/v2/user/delete-account:
+    delete:
+      tags:
+        - Users
+      summary: Elimina l'account dell'utente autenticato
+      description: >
+        Elimina l'account dell'utente autenticato. Richiede un token JWT valido.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Account eliminato con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Account deleted successfully
+        '401':
+          description: Token non valido o assente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid token
+        '404':
+          description: Utente non trovato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: User not found
+        '500':
+          description: Errore interno del server durante l'eliminazione dell'account
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Server error during account deletion
+  /API/v2/Calendar-ics:
     get:
       tags:
         - Calendar
@@ -1895,13 +1899,13 @@ get:
                 properties:
                   error:
                     type: string
-                    example: Server error during .ics generation                            
+                    example: Server error during .ics generation
 components:
   securitySchemes:
-      BearerAuth:
-        type: http
-        scheme: bearer
-        bearerFormat: JWT
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     NewReport:
       type: object
@@ -1915,7 +1919,6 @@ components:
           type: string
           enum: ['almost_empty', 'empty_seats', 'seats_full', 'crowded', 'overcrowded']
       required: [line, time, crowdedness]
-
     Report:
       allOf:
         - $ref: '#/components/schemas/NewReport'
@@ -1943,3 +1946,10 @@ components:
         - _id
         - text
         - expireAt
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
